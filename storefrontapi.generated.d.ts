@@ -350,7 +350,7 @@ interface GeneratedQueryTypes {
     return: FooterQuery;
     variables: FooterQueryVariables;
   };
-  '#graphql\n  query FeaturedCollections {\n    collections(first: 3, query: "collection_type:smart") {\n      nodes {\n        id\n        title\n        handle\n        image {\n          altText\n          width\n          height\n          url\n        }\n      }\n    }\n  }\n': {
+  '#graphql\n  query FeaturedCollections {\n    collections(first: 3) {\n      nodes {\n        id\n        title\n        handle\n        image {\n          altText\n          width\n          height\n          url\n        }\n      }\n    }\n  }\n': {
     return: FeaturedCollectionsQuery;
     variables: FeaturedCollectionsQueryVariables;
   };
