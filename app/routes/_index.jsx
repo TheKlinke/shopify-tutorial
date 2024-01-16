@@ -3,7 +3,7 @@ import {Image} from '@shopify/hydrogen';
 
 export function meta() {
   return [
-    {title: 'Hydrogen'},
+    {title: 'Ticket to the Moon'},
     {description: 'A custom storefront powered by Hydrogen'},
   ];
 }
@@ -47,7 +47,7 @@ export default function Index() {
 
 const COLLECTIONS_QUERY = `#graphql
   query FeaturedCollections {
-    collections(first: 3, query: "collection_type:smart") {
+    collections(first: 3) {
       nodes {
         id
         title
