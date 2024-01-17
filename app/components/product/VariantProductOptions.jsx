@@ -23,7 +23,7 @@ export default function VariantProductOptions({product}) {
                   <Link
                     key={value}
                     to={to}
-                    prefetch="intent"
+                    prefetch="render"
                     className={`leading-none py-1 border-b-[1.5px] hover:no-underline cursor-pointer transition-all duration-200 ${
                       isActive
                         ? 'border-gray-500'
