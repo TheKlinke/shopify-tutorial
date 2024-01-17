@@ -1,8 +1,9 @@
 import {json} from '@shopify/remix-oxygen';
 import {Image, Money, ShopPayButton} from '@shopify/hydrogen-react';
 import {useLoaderData} from '@remix-run/react';
-import ProductOptions from '~/components/product/ProductOptions';
-import {CartForm} from '@shopify/hydrogen';
+import {CartForm, getSelectedProductOptions} from '@shopify/hydrogen';
+import {redirect} from '@remix-run/server-runtime';
+import VariantProductOptions from '~/components/product/VariantProductOptions';
 
 const seo = ({data}) => ({
   title: data?.product?.title,
@@ -15,12 +16,8 @@ export const handle = {
 
 export async function loader({params, context, request}) {
   const {handle} = params;
-  const searchParams = new URL(request.url).searchParams;
-  const selectedOptions = [];
+  const selectedOptions = getSelectedProductOptions(request);
 
-  searchParams.forEach((value, name) => {
-    selectedOptions.push({name, value});
-  });
   const {product, shop} = await context.storefront.query(PRODUCT_QUERY, {
     variables: {
       handle,
@@ -29,19 +26,30 @@ export async function loader({params, context, request}) {
   });
 
   // Set a default variant so you always have an "orderable" product selected
-  const selectedVariant =
-    product.selectedVariant ?? product?.variants?.nodes[0];
+  if (!product.selectedVariant) {
+    const searchParams = new URLSearchParams(new URL(request.url).search);
+    const firstVariant = product.variants.nodes[0];
+
+    for (const option of firstVariant.selectedOptions) {
+      searchParams.set(option.name, option.value);
+    }
+
+    throw redirect(
+      `/products/${handle}?${searchParams.toString()}`,
+      302, // Make sure to use a 302, because the first variant is subject to change
+    );
+  }
 
   // Handle 404s
   if (!product) {
     throw new Response(null, {status: 404});
   }
 
-  return json({product, shop, selectedVariant});
+  return json({product, shop});
 }
 
 export default function Product() {
-  const {product, selectedVariant, shop} = useLoaderData();
+  const {product, shop} = useLoaderData();
 
   return (
     <section className="w-full gap-4 md:gap-8 grid px-6 md:px-8 lg:px-12">
@@ -63,19 +71,16 @@ export default function Product() {
               {product.vendor}
             </span>
           </div>
-          <ProductOptions
-            options={product.options}
-            selectedVariant={selectedVariant}
-          />
+          <VariantProductOptions product={product} />
           <Money
             withoutTrailingZeros
-            data={selectedVariant.price}
+            data={product.selectedVariant?.price}
             className="text-xl font-semibold mb-2"
           />
-          {selectedVariant.availableForSale && (
+          {product.selectedVariant?.availableForSale && (
             <ShopPayButton
               storeDomain={shop.primaryDomain.url}
-              variantIds={[selectedVariant?.id]}
+              variantIds={[product.selectedVariant?.id]}
               width={'400px'}
             />
           )}
@@ -84,7 +89,7 @@ export default function Product() {
             inputs={{
               lines: [
                 {
-                  merchandiseId: selectedVariant.id,
+                  merchandiseId: product.selectedVariant?.id,
                 },
               ],
             }}
@@ -98,12 +103,12 @@ export default function Product() {
                     window.location.href = window.location.href + '#cart-aside';
                   }}
                   disabled={
-                    !selectedVariant.availableForSale ??
+                    !product.selectedVariant?.availableForSale ??
                     fetcher.state !== 'idle'
                   }
                   className="border border-black rounded-sm w-full px-4 py-2 text-white bg-black uppercase hover:bg-white hover:text-black transition-colors duration-150"
                 >
-                  {selectedVariant?.availableForSale
+                  {product.selectedVariant?.availableForSale
                     ? 'Add to cart'
                     : 'Sold out'}
                 </button>
